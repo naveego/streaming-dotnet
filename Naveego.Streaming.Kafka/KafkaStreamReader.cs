@@ -1,5 +1,4 @@
 using System;
-using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -95,7 +94,7 @@ namespace Naveego.Streaming.Kafka
                                 // Run the processing again
                                 var retryResult = await onMessage(item);
                                 
-                                // If we were successfull then commit and move on.
+                                // If we were successful then commit and move on.
                                 if (retryResult.Success)
                                 {
                                     c.Commit();
