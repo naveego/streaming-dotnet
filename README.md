@@ -90,17 +90,13 @@ how to respond to the temporary errors.
 
 ## Kafka
 
-We provide a [Apache Kafka] implementation out of the box.  Here is an example of using the `KafkaStreamReader<>`.
+We provide a [Apache Kafka] implementation out-of-the-box.  Here is an example of using the `KafkaStreamReader<>`.
 
 ```c#
 public class MyKafkaApplication
 {
-    private readonly IStreamReader<Customer> _streamReader;
-
-    public MyKafkaApplication(IStreamReader<Customer> streamReader)
-    {
-        _streamReader = streamReader;
-    }
+    // Don't do this in the real world!! You should use dependency injection!
+    private readonly IStreamReader<Customer> _streamReader = new KafkaStreamReader<Customer>("kafka:9092", "topic.to.read"); 
 
     public async Task Run()
     {
