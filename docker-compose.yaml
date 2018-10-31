@@ -1,0 +1,22 @@
+version: '2'
+services:
+
+  kafka:
+    image:  spotify/kafka
+    ports:
+    - "9092:9092"
+    - "2181:2181"
+    environment:
+      KAFKA_BROKER_ID: 1
+      ADVERTISED_HOST: kafka
+
+  kafkamgr:
+    image: sheepkiller/kafka-manager
+    labels:
+    - "traefik.enable=true"
+    - "traefik.frontend.rule=Host:kafka.n5o.red"
+    - "traefik.port=9000"
+    - "traefik.protocol=http"
+    environment:
+      ZK_HOSTS: kafka
+      APPLICATION_SECRET: letmein
