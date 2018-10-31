@@ -6,6 +6,13 @@
         <Version>1.0.0</Version>
         <Authors>Naveego Devs</Authors>
         <Company>Naveego Inc</Company>
+        <Title>Naveego Streaming Library</Title>
+        <Description>A simple library for writing streaming applications</Description>
+        <Copyright>Naveego 2018</Copyright>
+	<ProjectUrl>https://github.com/naveego/streaming-dotnet</ProjectUrl>
+ 	<Tags>naveego;streaming</Tags>
+	<RepositoryUrl>https://github.com/naveego/streaming-dotnet</RepositoryUrl>
+    	<RepositoryType>git</RepositoryType>
     </PropertyGroup>
 
 </Project>

@@ -6,6 +6,13 @@
         <Version>1.0.0</Version>
         <Authors>Naveego Devs</Authors>
         <Company>Naveego Inc</Company>
+        <Title>Naveego Kafka Streaming Library</Title>
+        <Description>A simple library for writing streaming applications with Apache Kafka</Descr$
+        <Copyright>Naveego 2018</Copyright>
+        <ProjectUrl>https://github.com/naveego/streaming-dotnet</ProjectUrl>
+        <Tags>naveego;streaming;kafka</Tags>
+        <RepositoryUrl>https://github.com/naveego/streaming-dotnet</RepositoryU$
+        <RepositoryType>git</RepositoryType>
     </PropertyGroup>
 
     <ItemGroup>
