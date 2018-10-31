@@ -88,6 +88,10 @@ how to respond to the temporary errors.
  }
 ``` 
 
+## Serialization
+
+Serialization is provided by [JSON .NET].
+
 ## Kafka
 
 We provide a [Apache Kafka] implementation out-of-the-box.  Here is an example of using the `KafkaStreamReader<>`.
@@ -121,4 +125,4 @@ public class MyKafkaApplication
 
 
 [Apache Kafka]: https://kafka.apache.org/
-
+[JSON .NET]: https://www.newtonsoft.com/json
