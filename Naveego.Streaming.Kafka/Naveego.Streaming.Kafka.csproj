@@ -11,7 +11,7 @@
         <Copyright>Naveego 2018</Copyright>
         <ProjectUrl>https://github.com/naveego/streaming-dotnet</ProjectUrl>
         <Tags>naveego;streaming;kafka</Tags>
-        <RepositoryUrl>https://github.com/naveego/streaming-dotnet</RepositoryU$
+        <RepositoryUrl>https://github.com/naveego/streaming-dotnet</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
     </PropertyGroup>
 
