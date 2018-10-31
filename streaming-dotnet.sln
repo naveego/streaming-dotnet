@@ -1,0 +1,21 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Naveego.Streaming", "Naveego.Streaming\Naveego.Streaming.csproj", "{B0A49995-B53A-4CDE-AF33-10DD643ADB51}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Git", "Git", "{EB73D88B-ABC9-4BE4-A519-3931A6D649BC}"
+ProjectSection(SolutionItems) = preProject
+	.gitignore = .gitignore
+EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B0A49995-B53A-4CDE-AF33-10DD643ADB51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0A49995-B53A-4CDE-AF33-10DD643ADB51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0A49995-B53A-4CDE-AF33-10DD643ADB51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0A49995-B53A-4CDE-AF33-10DD643ADB51}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
