@@ -96,7 +96,8 @@ We provide a [Apache Kafka] implementation out-of-the-box.  Here is an example o
 public class MyKafkaApplication
 {
     // Don't do this in the real world!! You should use dependency injection!
-    private readonly IStreamReader<Customer> _streamReader = new KafkaStreamReader<Customer>("kafka:9092", "topic.to.read"); 
+    private readonly IStreamReader<Customer> _streamReader = 
+        new KafkaStreamReader<Customer>("kafka:9092", "topic.to.read"); 
 
     public async Task Run()
     {
