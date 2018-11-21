@@ -1,22 +1,36 @@
-version: '2'
+version: "2"
 services:
-
   kafka:
-    image:  spotify/kafka
+    cpuset: "1"
+    image: spotify/kafka
+    container_name: kafka-n1
+    hostname: kafka-n1
     ports:
-    - "9092:9092"
-    - "2181:2181"
+      - "9092:9092"
+      - "2181:2181"
     environment:
       KAFKA_BROKER_ID: 1
       ADVERTISED_HOST: kafka
+    volumes:
+      - ./kafka-init.sh:/kafka-init.sh
+    # command: bash -c "chmod +x kafka-init.sh && ./kafka-init.sh"
 
   kafkamgr:
     image: sheepkiller/kafka-manager
     labels:
-    - "traefik.enable=true"
-    - "traefik.frontend.rule=Host:kafka.n5o.red"
-    - "traefik.port=9000"
-    - "traefik.protocol=http"
+      - "traefik.enable=true"
+      - "traefik.frontend.rule=Host:kafka.n5o.red"
+      - "traefik.port=9000"
+      - "traefik.protocol=http"
     environment:
       ZK_HOSTS: kafka
       APPLICATION_SECRET: letmein
+
+  traefik:
+    image: docker.n5o.black/dev/traefik
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik.toml:/traefik.toml

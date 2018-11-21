@@ -34,13 +34,9 @@ namespace Naveego.Streaming.Kafka
             _topic = topic;
         }
         
-        public Task ReadAsync(Func<T, Task<HandleResult>> onMessage, CancellationToken cancellationToken)
+        public async Task ReadAsync(Func<T, Task<HandleResult>> onMessage, CancellationToken cancellationToken)
         {
-            return Task.Run(() => Run(onMessage, cancellationToken), cancellationToken);
-        }
-
-        private async void Run(Func<T, Task<HandleResult>> onMessage, CancellationToken cancellationToken)
-        {
+            
             try
             {
                 using (var c = new Consumer<Ignore, string>(_config))
@@ -55,67 +51,129 @@ namespace Naveego.Streaming.Kafka
 
                     while (consuming)
                     {
-                        // Check the cancellation token to see if we need to stop
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        try
-                        {
-                            var cr = c.Consume();
-                            T item;
-                            using (var jsonReader = new JsonTextReader(new StringReader(cr.Value)))
-                            {
-                                item = _serializer.Deserialize<T>(jsonReader);
-                            }
-
-                            var result = await onMessage(item);
-
-                            // If the result was a success then commit the offsets
-                            // TODO: Improve this to commit offsets in background for performance reasons
-                            if (result.Success)
-                            {
-                                c.Commit();
-                                // move on
-                                continue;
-                                
-                            }
-                            
-                            Logger.LogWarning("Processing of message was not successful.  Retrying...");
-
-                            var retryCount = 0;
-                            
-                            // If we have reached this point the initial processing of the 
-                            // message was not successful.  So we need to use the retry 
-                            // strategy to try it again.
-                            while (await result.RetryStrategy.Next(cancellationToken))
-                            {
-                                retryCount++;
-                                Logger.LogDebug($"Retrying message: retry count {retryCount}");
-                                
-                                // Run the processing again
-                                var retryResult = await onMessage(item);
-                                
-                                // If we were successful then commit and move on.
-                                if (retryResult.Success)
-                                {
-                                    c.Commit();
-                                    break;
-                                }
-                            }
-                        }
-                        catch (ConsumeException e)
-                        {
-                            Logger.LogError(e, $"Error processing kafka stream: {e.Message}");
-                        }
+                        await ConsumeAndProcessMessage(onMessage, c, cancellationToken);
                     }
 
                     // Ensure the consumer leaves the group cleanly and final offsets are committed.
                     c.Close();
                 }
             }
+            
             catch (Exception ex)
             {
                 Logger.LogError(ex, $"Could not create consumer on Kafka stream: {ex.Message}");
                 throw;
+            }
+        }
+
+        private async Task ConsumeAndProcessMessage(
+            Func<T, Task<HandleResult>> onMessage,
+            Consumer<Ignore, string> c,
+            CancellationToken cancellationToken)
+        {
+            // Check the cancellation token to see if we need to stop
+                cancellationToken.ThrowIfCancellationRequested();
+                HandleResult r = null;
+                try
+                {
+                    var cr = c.Consume();
+                    T item;
+                    using (var jsonReader = new JsonTextReader(new StringReader(cr.Value)))
+                    {
+                        item = _serializer.Deserialize<T>(jsonReader);
+                    }
+
+                    var result = await onMessage(item);
+                    r = result;
+                    
+                    // If the result was a success then commit the offsets
+                    // TODO: Improve this to commit offsets in background for performance reasons
+                    if (result.Success)
+                    {
+                        c.Commit();
+                        // move on
+                        return;
+                    }
+                    
+                    Logger.LogWarning("Processing of message was not successful.  Retrying...");
+
+                    await RetryProcessingMessage(item, onMessage, c, cancellationToken, result);
+                }
+                catch (Exception e)
+                {
+                    switch (e)
+                    {
+                        case ConsumeException exception:
+                            Logger.LogError(e, $"Consuming kafka message error: {e.Message}");
+                            break;
+                        case TopicPartitionOffsetException exception:
+                            Logger.LogError(e, $"Committing topic offset error: {e.Message}");
+                            if(r != null)
+                                await RetryCommit(c, cancellationToken, r);
+                            break;
+                        case KafkaException exception:
+                            Logger.LogError(e, $"Error interacting with kafka: {e.Message}");
+                            break;
+                        default:
+                            throw;
+                    }
+                }
+        }
+
+        private async Task RetryProcessingMessage(
+            T item,
+            Func<T, Task<HandleResult>> onMessage,
+            Consumer<Ignore, string> c,
+            CancellationToken cancellationToken,
+            HandleResult result)
+        {
+            var retryCount = 0;
+            
+            // If we have reached this point the initial processing of the 
+            // message was not successful.  So we need to use the retry 
+            // strategy to try it again.
+            while (await result.RetryStrategy.Next(cancellationToken))
+            {
+                retryCount++;
+                Logger.LogDebug($"Retrying message: retry count {retryCount}");
+                
+                // Run the processing again
+                var retryResult = await onMessage(item);
+                
+                // If we were successful then commit and move on.
+                if (retryResult.Success)
+                {
+                    c.Commit();
+                    break;
+                }
+            }
+        }
+        
+        private async Task RetryCommit(
+            Consumer<Ignore, string> c,
+            CancellationToken cancellationToken,
+            HandleResult result)
+        {
+            var retryCount = 0;
+            
+            // If we have reached this point the initial processing of the 
+            // message was not successful.  So we need to use the retry 
+            // strategy to try it again.
+            while (await result.RetryStrategy.Next(cancellationToken))
+            {
+                retryCount++;
+                Logger.LogDebug($"Retrying commit: retry count {retryCount}");
+
+                try
+                {
+                    c.Commit();
+                }
+                catch (Exception e)
+                {
+                    continue;
+                }
+
+                break;
             }
         }
     }

@@ -1,0 +1,20 @@
+################################################################
+# Docker Provider
+################################################################
+
+debug = false
+
+logLevel = "DEBUG"
+defaultEntryPoints = ["http"]
+
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+
+[retry]
+
+[docker]
+endpoint = "unix:///var/run/docker.sock"
+domain = "docker.n5o.red"
+watch = true
+exposedByDefault = false
