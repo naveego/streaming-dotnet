@@ -10,8 +10,8 @@ namespace Naveego.Streaming.Kafka.Tests
 {
     public class ReadersCanRunInParallel
     {
-        private int WrittenCount { get; set; }
-        private int ProcessedCount { get; set; }
+        private static int _writtenCount;
+        private static int _processedCount;
         
         [Theory]
         [InlineData("topic1", 2, 50, 10)]
@@ -23,8 +23,8 @@ namespace Naveego.Streaming.Kafka.Tests
             int messageCount,
             int timeoutInSeconds)
         {
-            ProcessedCount = 0;
-            WrittenCount = 0;
+            _processedCount = 0;
+            _writtenCount = 0;
             
             var broker = "kafka:9092";
             var groupId = "streaming-tests";
@@ -42,10 +42,12 @@ namespace Naveego.Streaming.Kafka.Tests
 
             Parallel.Invoke(actions);
             
-            while(ProcessedCount < messageCount || cts.IsCancellationRequested)
-                await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
+            while(_processedCount < messageCount || cts.IsCancellationRequested)
+                await Task.Delay(TimeSpan.FromMilliseconds(200), cts.Token);
             
-            Assert.Equal(ProcessedCount, WrittenCount);
+            Assert.Equal(messageCount, _writtenCount);
+            Assert.Equal(_processedCount, _writtenCount);
+            Assert.Equal(_processedCount, messageCount);
         }
 
 
@@ -66,7 +68,7 @@ namespace Naveego.Streaming.Kafka.Tests
             {
                 var m = testMessages.Generate();
                 await writer.WriteAsync(m);
-                WrittenCount++;
+                Interlocked.Increment(ref _writtenCount);
             }
         }
 
@@ -80,7 +82,7 @@ namespace Naveego.Streaming.Kafka.Tests
         public async Task<HandleResult> SomeAsyncTask(Message m)
         {
             await Task.Delay(TimeSpan.FromMilliseconds(200));
-            ProcessedCount++;
+            Interlocked.Increment(ref _processedCount);
             return HandleResult.Ok;
         }
     }

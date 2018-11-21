@@ -73,7 +73,6 @@ namespace Naveego.Streaming.Kafka
         {
             // Check the cancellation token to see if we need to stop
                 cancellationToken.ThrowIfCancellationRequested();
-                HandleResult r = null;
                 try
                 {
                     var cr = c.Consume();
@@ -84,7 +83,6 @@ namespace Naveego.Streaming.Kafka
                     }
 
                     var result = await onMessage(item);
-                    r = result;
                     
                     // If the result was a success then commit the offsets
                     // TODO: Improve this to commit offsets in background for performance reasons
@@ -108,8 +106,6 @@ namespace Naveego.Streaming.Kafka
                             break;
                         case TopicPartitionOffsetException exception:
                             Logger.LogError(e, $"Committing topic offset error: {e.Message}");
-                            if(r != null)
-                                await RetryCommit(c, cancellationToken, r);
                             break;
                         case KafkaException exception:
                             Logger.LogError(e, $"Error interacting with kafka: {e.Message}");
@@ -146,34 +142,6 @@ namespace Naveego.Streaming.Kafka
                     c.Commit();
                     break;
                 }
-            }
-        }
-        
-        private async Task RetryCommit(
-            Consumer<Ignore, string> c,
-            CancellationToken cancellationToken,
-            HandleResult result)
-        {
-            var retryCount = 0;
-            
-            // If we have reached this point the initial processing of the 
-            // message was not successful.  So we need to use the retry 
-            // strategy to try it again.
-            while (await result.RetryStrategy.Next(cancellationToken))
-            {
-                retryCount++;
-                Logger.LogDebug($"Retrying commit: retry count {retryCount}");
-
-                try
-                {
-                    c.Commit();
-                }
-                catch (Exception e)
-                {
-                    continue;
-                }
-
-                break;
             }
         }
     }
