@@ -11,7 +11,6 @@ namespace Naveego.Streaming.Kafka
 {
     public class KafkaStreamWriter<T> : IStreamWriter<T>
     {
-        private readonly JsonSerializer _serializer = new JsonSerializer();
         private readonly Producer<Null, string> _producer;
         private readonly string _outTopic;
 
@@ -33,14 +32,11 @@ namespace Naveego.Streaming.Kafka
         {
             try
             {
-                var sb = new StringBuilder();
-
-                using (var jw = new JsonTextWriter(new StringWriter(sb)))
+                var m = new Message<Null, string>
                 {
-                    _serializer.Serialize(jw, record);
-                }
-
-                await _producer.ProduceAsync(_outTopic, new Message<Null, string> {Value = sb.ToString()});
+                    Value = Utf8Json.JsonSerializer.ToJsonString(record)
+                };
+                await _producer.ProduceAsync(_outTopic, m);
             }
             catch (Exception ex)
             {

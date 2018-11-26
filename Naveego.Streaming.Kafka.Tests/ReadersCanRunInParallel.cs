@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,55 +14,64 @@ namespace Naveego.Streaming.Kafka.Tests
     {
         private static int _writtenCount;
         private static int _processedCount;
-        
+
         [Theory]
-        [InlineData("topic1", 2, 50, 10)]
-        [InlineData("topic2", 4, 100, 30)]
-        [InlineData("topic3", 16, 500, 30)]
-        public async Task CanReadFromTopicInParallel(
+        [InlineData("dotnet-streaming-1", 2, 100, 4)]
+        [InlineData("dotnet-streaming-2", 4, 200, 5)]
+        [InlineData("dotnet-streaming-3", 16, 500, 5)]
+        public async Task CanReadFromTopicsInParallel(
             string topic,
             int readerCount,
             int messageCount,
             int timeoutInSeconds)
         {
-            _processedCount = 0;
             _writtenCount = 0;
-            
+            _processedCount = 0;
+
             var broker = "kafka:9092";
             var groupId = "streaming-tests";
-            
-            Action[] actions = new Action[readerCount + 1];
 
-            actions[0] =() => WriteMessages(broker, topic, messageCount);
-            
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutInSeconds));
+            await WriteMessages(broker, topic, messageCount);
 
-            foreach (var i in Enumerable.Range(1, readerCount))
+            var cts = new CancellationTokenSource();
+            var actions = new Action[readerCount];
+
+            foreach (var i in Enumerable.Range(0, readerCount))
             {
                 actions[i] = () => ReadMessages(broker, topic, groupId, cts.Token);
             }
 
             Parallel.Invoke(actions);
+
+            var timer = Stopwatch.StartNew();
+
+            while (_processedCount < messageCount)
+            {
+                if (timer.Elapsed.TotalSeconds > timeoutInSeconds)
+                    break;
+            }
             
-            while(_processedCount < messageCount || cts.IsCancellationRequested)
-                await Task.Delay(TimeSpan.FromMilliseconds(200), cts.Token);
-            
+            timer.Stop();
+
+            var timeoutErrorMessage = "Only processed " + _processedCount + " out of " + _writtenCount + " within timeout of " + timeoutInSeconds + " seconds";
+
+            Assert.True(timeoutInSeconds > timer.Elapsed.TotalSeconds, timeoutErrorMessage);
             Assert.Equal(messageCount, _writtenCount);
-            Assert.Equal(_processedCount, _writtenCount);
-            Assert.Equal(_processedCount, messageCount);
+            Assert.Equal(_writtenCount, _processedCount);
+            Assert.Equal(messageCount, _processedCount);
         }
 
 
         public async Task WriteMessages(string broker, string topic, int messageCount)
         {
-              
+
             var testMessages = new Faker<Message>()
-                .StrictMode(true)
-                .RuleFor(m => m.Name, f => f.Name.FindName())
-                .RuleFor(m => m.Address, f => f.Address.FullAddress())
-                .RuleFor(m => m.Company, f => f.Company.CompanyName())
-                .RuleFor(m => m.DistanceInMiles, f => f.Random.Byte())
-                .RuleFor(m => m.Time, f => f.Date.Soon());
+                   .StrictMode(true)
+                   .RuleFor(m => m.Name, f => f.Name.FindName())
+                   .RuleFor(m => m.Address, f => f.Address.FullAddress())
+                   .RuleFor(m => m.Company, f => f.Company.CompanyName())
+                   .RuleFor(m => m.DistanceInMiles, f => f.Random.Byte())
+                   .RuleFor(m => m.Time, f => f.Date.Soon());
 
             var writer = new KafkaStreamWriter<Message>(broker, topic);
 
@@ -75,13 +86,13 @@ namespace Naveego.Streaming.Kafka.Tests
         public async Task ReadMessages(string broker, string topic, string groupId, CancellationToken token)
         {
             var reader = new KafkaStreamReader<Message>(broker, groupId, topic);
-            
+
             await reader.ReadAsync(SomeAsyncTask, token);
         }
 
         public async Task<HandleResult> SomeAsyncTask(Message m)
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            await Task.Delay(TimeSpan.FromMilliseconds(10));
             Interlocked.Increment(ref _processedCount);
             return HandleResult.Ok;
         }

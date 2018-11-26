@@ -9,16 +9,16 @@ $KAFKA_HOME/bin/kafka-topics.sh \
     --create --zookeeper localhost:2181 \
     --replication-factor 1 \
     --partitions 16 \
-    --topic topic1 
+    --topic dotnet-streaming-1 
     
 $KAFKA_HOME/bin/kafka-topics.sh \
     --create --zookeeper localhost:2181 \
     --replication-factor 1 \
     --partitions 16 \
-    --topic topic2
+    --topic dotnet-streaming-2 
     
 $KAFKA_HOME/bin/kafka-topics.sh \
     --create --zookeeper localhost:2181 \
     --replication-factor 1 \
     --partitions 16 \
-    --topic topic3
+    --topic dotnet-streaming-3
