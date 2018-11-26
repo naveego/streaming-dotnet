@@ -1,28 +1,24 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>netcoreapp2.1</TargetFramework>
-        <PackageId>Naveego.Streaming.Kafka</PackageId>
-        <Version>1.0.0</Version>
-        <Authors>Naveego Devs</Authors>
-        <Company>Naveego Inc</Company>
-        <Title>Naveego Kafka Streaming Library</Title>
-        <Description>A simple library for writing streaming applications with Apache Kafka</Description>
-        <Copyright>Naveego 2018</Copyright>
-        <ProjectUrl>https://github.com/naveego/streaming-dotnet</ProjectUrl>
-        <Tags>naveego;streaming;kafka</Tags>
-        <RepositoryUrl>https://github.com/naveego/streaming-dotnet</RepositoryUrl>
-        <RepositoryType>git</RepositoryType>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Naveego.Streaming\Naveego.Streaming.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="Confluent.Kafka" Version="1.0.0-beta2" />
-      <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
-      <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-    </ItemGroup>
-
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <PackageId>Naveego.Streaming.Kafka</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Naveego Devs</Authors>
+    <Company>Naveego Inc</Company>
+    <Title>Naveego Kafka Streaming Library</Title>
+    <Description>A simple library for writing streaming applications with Apache Kafka</Description>
+    <Copyright>Naveego 2018</Copyright>
+    <ProjectUrl>https://github.com/naveego/streaming-dotnet</ProjectUrl>
+    <Tags>naveego;streaming;kafka</Tags>
+    <RepositoryUrl>https://github.com/naveego/streaming-dotnet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Naveego.Streaming\Naveego.Streaming.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Confluent.Kafka" Version="1.0.0-beta2" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
+    <PackageReference Include="Utf8Json" Version="1.3.7" />
+  </ItemGroup>
 </Project>
