@@ -11,9 +11,6 @@ namespace Naveego.Streaming.Kafka
 {
     public class KafkaStreamReader<T> : IStreamReader<T>
     {
-        
-        private readonly JsonSerializer _serializer = new JsonSerializer();
-        
         private readonly ConsumerConfig _config;
         private readonly string _topic;
 
@@ -76,12 +73,7 @@ namespace Naveego.Streaming.Kafka
                 try
                 {
                     var cr = c.Consume();
-                    T item;
-                    using (var jsonReader = new JsonTextReader(new StringReader(cr.Value)))
-                    {
-                        item = _serializer.Deserialize<T>(jsonReader);
-                    }
-
+                    var item = Utf8Json.JsonSerializer.Deserialize<T>(cr.Value);
                     var result = await onMessage(item);
                     
                     // If the result was a success then commit the offsets
