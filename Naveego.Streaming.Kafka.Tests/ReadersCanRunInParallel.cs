@@ -62,7 +62,7 @@ namespace Naveego.Streaming.Kafka.Tests
         }
 
 
-        public async Task WriteMessages(string broker, string topic, int messageCount)
+        private async Task WriteMessages(string broker, string topic, int messageCount)
         {
 
             var testMessages = new Faker<Message>()
@@ -78,9 +78,18 @@ namespace Naveego.Streaming.Kafka.Tests
             foreach (var _ in Enumerable.Range(0, messageCount))
             {
                 var m = testMessages.Generate();
-                await writer.WriteAsync(m);
+                writer.Write(m);
                 Interlocked.Increment(ref _writtenCount);
             }
+
+            await Task.Run(() =>
+            {
+                while (true)
+                {
+                    if (_writtenCount == messageCount)
+                        break;
+                }
+            });
         }
 
         public async Task ReadMessages(string broker, string topic, string groupId, CancellationToken token)
