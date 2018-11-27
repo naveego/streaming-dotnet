@@ -13,8 +13,8 @@ services:
       ADVERTISED_HOST: kafka
     volumes:
       - ./kafka-init.sh:/kafka-init.sh
-    # command: bash -c "chmod +x kafka-init.sh && ./kafka-init.sh"
 
+  
   kafkamgr:
     image: sheepkiller/kafka-manager
     labels:

@@ -40,5 +40,21 @@ namespace Naveego.Streaming.Kafka
                 Logger.LogError(ex, "Error writing message to stream");
             }
         }
+
+        public void Write(T record)
+        {
+            try
+            {
+                var m = new Message<Null, string>
+                {
+                    Value = Utf8Json.JsonSerializer.ToJsonString(record)
+                };
+                _producer.BeginProduce(_outTopic, m);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error writing message to stream");
+            }
+        }
     }
 }

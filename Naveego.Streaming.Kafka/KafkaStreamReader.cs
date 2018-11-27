@@ -1,9 +1,11 @@
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Newtonsoft.Json;
 
 namespace Naveego.Streaming.Kafka
 {
@@ -25,13 +27,11 @@ namespace Naveego.Streaming.Kafka
                 SessionTimeoutMs = 6000,
                 AutoOffsetReset = AutoOffsetResetType.Earliest
             };
-
             _topic = topic;
         }
         
         public async Task ReadAsync(Func<T, Task<HandleResult>> onMessage, CancellationToken cancellationToken)
-        {
-            
+        {           
             try
             {
                 using (var c = new Consumer<Ignore, string>(_config))
@@ -60,6 +60,7 @@ namespace Naveego.Streaming.Kafka
                 throw;
             }
         }
+        
 
         private async Task ConsumeAndProcessMessage(
             Func<T, Task<HandleResult>> onMessage,
@@ -71,11 +72,10 @@ namespace Naveego.Streaming.Kafka
                 try
                 {
                     var cr = c.Consume();
-                    var item = Utf8Json.JsonSerializer.Deserialize<T>(cr.Value);
-                    var result = await onMessage(item);
+                    var process = ReaderMiddleware.NewtonsoftJson(onMessage);
+                    var result = await process(cr.Value);
                     
                     // If the result was a success then commit the offsets
-                    // TODO: Improve this to commit offsets in background for performance reasons
                     if (result.Success)
                     {
                         c.Commit();
@@ -85,19 +85,19 @@ namespace Naveego.Streaming.Kafka
                     
                     Logger.LogWarning("Processing of message was not successful.  Retrying...");
 
-                    await RetryProcessingMessage(item, onMessage, c, cancellationToken, result);
+                    await RetryProcessingMessage(process, cr.Value, c, cancellationToken, result);
                 }
                 catch (Exception e)
                 {
                     switch (e)
                     {
-                        case ConsumeException exception:
+                        case ConsumeException _:
                             Logger.LogError(e, $"Consuming kafka message error: {e.Message}");
                             break;
-                        case TopicPartitionOffsetException exception:
+                        case TopicPartitionOffsetException _:
                             Logger.LogError(e, $"Committing topic offset error: {e.Message}");
                             break;
-                        case KafkaException exception:
+                        case KafkaException _:
                             Logger.LogError(e, $"Error interacting with kafka: {e.Message}");
                             break;
                         default:
@@ -107,8 +107,8 @@ namespace Naveego.Streaming.Kafka
         }
 
         private async Task RetryProcessingMessage(
-            T item,
-            Func<T, Task<HandleResult>> onMessage,
+            Func<string, Task<HandleResult>> process,
+            string value,
             Consumer<Ignore, string> c,
             CancellationToken cancellationToken,
             HandleResult result)
@@ -124,7 +124,7 @@ namespace Naveego.Streaming.Kafka
                 Logger.LogDebug($"Retrying message: retry count {retryCount}");
                 
                 // Run the processing again
-                var retryResult = await onMessage(item);
+                var retryResult = await process(value);
                 
                 // If we were successful then commit and move on.
                 if (retryResult.Success)
@@ -135,4 +135,39 @@ namespace Naveego.Streaming.Kafka
             }
         }
     }
+
+    public static class ReaderMiddleware
+    {
+        public static Func<string, Task<HandleResult>> Utf8JsonWrapper<T>(Func<T, Task<HandleResult>> onMessage)
+        {
+            return data =>
+            {
+                var item = Utf8Json.JsonSerializer.Deserialize<T>(data);
+                return onMessage(item);
+            };
+        }
+
+        public static Func<string, Task<HandleResult>> NewtonsoftJson<T>(Func<T, Task<HandleResult>> onMessage)
+        {
+            return data =>
+            {
+                T item;
+                using (var jsonReader = new JsonTextReader(new StringReader(data)))
+                {
+                    item = new JsonSerializer().Deserialize<T>(jsonReader);
+                    return onMessage(item);
+                }
+            };
+        }
+
+        public static Func<string, Task<HandleResult>> CustomDeserialize<T>(Func<T, Task<HandleResult>> onMessage, Func<string, T> deserialize)
+        {
+            return data =>
+            {
+                var item = deserialize(data);
+                return onMessage(item);
+            };
+        }
+    }
 }
+
