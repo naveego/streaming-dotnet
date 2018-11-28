@@ -105,7 +105,7 @@ public class MyKafkaApplication
 
     public async Task Run()
     {
-        await _streamReader.ReadAsync(Persist);
+        await _streamReader.ReadAsync(ProcessCustomer);
     }
 
     private async Task<HandleResult> ProcessCustomer(Customer customer)
