@@ -1,13 +1,17 @@
 using System;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Newtonsoft.Json;
 
 namespace Naveego.Streaming.Kafka
 {
     public class KafkaStreamWriter<T> : IStreamWriter<T>
     {
+        private readonly JsonSerializer _serializer = new JsonSerializer();
         private readonly Producer<Null, string> _producer;
         private readonly string _outTopic;
 
@@ -29,26 +33,37 @@ namespace Naveego.Streaming.Kafka
         {
             try
             {
-                var m = new Message<Null, string>
+                var sb = new StringBuilder();
+
+                using (var jw = new JsonTextWriter(new StringWriter(sb)))
                 {
-                    Value = Utf8Json.JsonSerializer.ToJsonString(record)
-                };
-                await _producer.ProduceAsync(_outTopic, m);
+                    _serializer.Serialize(jw, record);
+                }
+
+                await _producer.ProduceAsync(_outTopic, new Message<Null, string> {Value = sb.ToString()});
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Error writing message to stream");
             }
         }
-
+        
         public void Write(T record)
         {
             try
             {
+                var sb = new StringBuilder();
+
+                using (var jw = new JsonTextWriter(new StringWriter(sb)))
+                {
+                    _serializer.Serialize(jw, record);
+                }
+                
                 var m = new Message<Null, string>
                 {
-                    Value = Utf8Json.JsonSerializer.ToJsonString(record)
+                    Value = sb.ToString()
                 };
+                
                 _producer.BeginProduce(_outTopic, m);
             }
             catch (Exception ex)
